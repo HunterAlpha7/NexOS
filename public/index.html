@@ -1,54 +1,104 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>NexOS • Dhaka</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NexOS Control • Dhaka</title>
   <style>
-    :root { --bg: #0a0a0a; --text: #fff; --accent: #00d0ff; --btn: #00b8e6; }
-    body { margin:0; padding:20px; background:var(--bg); color:var(--text); font-family:system-ui; text-align:center; }
-    h1 { color:var(--accent); font-size:2.5em; margin:0; }
-    h2 { color:#aaa; margin-top:20px; }
-    button { background:var(--btn); color:#000; border:none; padding:16px; margin:8px; border-radius:12px; font-size:17px; width:88%; font-weight:bold; }
-    button:hover { background:#00e6ff; transform:scale(1.03); }
-    .dev { background:#111; border:2px solid var(--accent); border-radius:12px; padding:15px; margin-top:30px; }
-    .dev button { background:#333; color:#fff; font-size:15px; }
-    #status { margin-top:20px; padding:10px; background:#111; border-radius:8px; color:var(--accent); }
+    :root {
+      --bg: #000;
+      --text: #fff;
+      --accent: #00d0ff;  /* Turquoise blue */
+      --btn: #00b8e6;
+      --btn-hover: #0099cc;
+      --dev-bg: #111;
+      --dev-border: #00d0ff;
+    }
+    * { box-sizing: border-box; }
+    body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; text-align: center; line-height: 1.4; }
+    h1 { color: var(--accent); font-size: 2.2em; margin: 0 0 10px; text-shadow: 0 0 10px var(--accent); }
+    p { color: #aaa; font-size: 1em; margin: 0 0 20px; }
+    .container { max-width: 380px; margin: auto; }
+    input { background: #222; color: var(--text); border: 1px solid var(--accent); padding: 14px; margin: 10px; border-radius: 8px; width: 85%; font-size: 16px; text-align: center; }
+    button { background: var(--btn); color: #000; border: none; padding: 16px 24px; margin: 8px; border-radius: 12px; font-size: 16px; cursor: pointer; transition: all 0.3s; width: 85%; font-weight: bold; box-shadow: 0 4px 8px rgba(0,176,230,0.3); }
+    button:hover { background: var(--btn-hover); transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,176,230,0.4); }
+    .dev-menu { background: var(--dev-bg); border: 1px solid var(--dev-border); border-radius: 12px; padding: 20px; margin: 25px 0; }
+    .dev-menu h2 { color: var(--accent); border-bottom: 1px solid var(--dev-border); padding-bottom: 10px; }
+    .dev-menu button { background: #444; color: #fff; font-size: 14px; box-shadow: none; }
+    .dev-menu button:hover { background: #555; transform: none; }
+    #status { background: #111; padding: 12px; border-radius: 8px; margin: 20px 0; color: var(--accent); font-size: 14px; border: 1px solid var(--accent); }
   </style>
 </head>
 <body>
-  <h1>NexOS</h1>
-  <p>Dhaka • Cloud Companion</p>
+  <div class="container">
+    <h1>NexOS</h1>
+    <p>Dhaka Desk Companion • v1.0</p>
 
-  <input type="time" id="time" style="padding:12px; width:80%; margin:15px; border-radius:8px; border:1px solid var(--accent); background:#222; color:white;">
-  <button onclick="setAlarm()">SET ALARM</button>
+    <!-- Main Menu -->
+    <h2>Main Features</h2>
+    <input type="time" id="alarmTime" placeholder="Set alarm time">
+    <button onclick="setAlarm()">SET ALARM</button>
 
-  <button onclick="getWeather()">WEATHER • DHAKA</button>
-  <button onclick="getQuote()">ANIME QUOTE</button>
-  <button onclick="getNASA()">NASA ALERT</button>
+    <button onclick="getWeather()">WEATHER ALERT</button>
+    <button onclick="getQuote()">ANIME QUOTE</button>
+    <button onclick="getNASA()">NASA SATELLITE</button>
 
-  <div class="dev">
-    <h2>Development Menu</h2>
-    <button onclick="ota()">OTA UPDATE</button>
-    <button onclick="emo()">EMO MODE</button>
-    <button onclick="sed()">SEDENTARY ALERT</button>
+    <!-- Development Menu -->
+    <div class="dev-menu">
+      <h2>Development Menu</h2>
+      <button onclick="ota()">OTA UPDATE</button>
+      <button onclick="emo()">EMO MODE</button>
+      <button onclick="sed()">SEDENTARY ALERT</button>
+    </div>
+
+    <div id="status">Status: Ready</div>
   </div>
-
-  <div id="status">Ready</div>
 
   <script>
     async function setAlarm() {
-      const t = document.getElementById('time').value;
-      if (!t) return alert("Choose time!");
-      const [h,m] = t.split(':');
-      await fetch('/api/alarm', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({hour:+h, minute:+m, active:true})});
-      alert("Alarm set: " + t);
+      const time = document.getElementById('alarmTime').value;
+      if (!time) return alert('Pick a time!');
+      const [h, m] = time.split(':');
+      const response = await fetch('/api/alarm', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({hour: parseInt(h), minute: parseInt(m), active: true})
+      });
+      if (response.ok) alert('Alarm set for ' + time + '!');
     }
-    async function getWeather() { const d=await(await fetch('/api/weather')).json(); alert(`${d.location}\nTemp: ${d.temp}°C (${d.condition})\n${d.alerts.join('\n') || 'No alerts'}`); }
-    async function getQuote() { const d=await(await fetch('/api/quote')).json(); alert(`"${d.quote}"\n— ${d.character}\n(${d.anime})`); }
-    async function getNASA() { const d=await(await fetch('/api/nasa')).json(); alert(d.message); }
-    async function ota() { await fetch('/api/ota',{method:'POST'}); alert("OTA pushed!"); }
-    async function emo() { await fetch('/api/emo',{method:'POST'}); alert("Emo Mode ON!"); }
-    async function sed() { await fetch('/api/sedentary',{method:'POST'}); alert("Sedentary alert sent!"); }
+
+    async function getWeather() {
+      const response = await fetch('/api/weather');
+      const data = await response.json();
+      alert(data.location + '\nTemp: ' + data.temp + '°C (' + data.condition + ')\nAlerts:\n' + (data.alerts.length ? data.alerts.join('\n') : 'None'));
+    }
+
+    async function getQuote() {
+      const response = await fetch('/api/quote');
+      const quote = await response.json();
+      alert(`"${quote.quote}"\n— ${quote.character}\n(${quote.anime})`);
+    }
+
+    async function getNASA() {
+      const response = await fetch('/api/nasa');
+      const data = await response.json();
+      alert(data.message + '\nVelocity: ' + data.velocity + ' km/h');
+    }
+
+    async function ota() {
+      const response = await fetch('/api/ota', {method: 'POST'});
+      if (response.ok) alert('OTA update triggered — check NexOS!');
+    }
+
+    async function emo() {
+      const response = await fetch('/api/emo', {method: 'POST'});
+      if (response.ok) alert('Emo Mode activated — funny faces coming!');
+    }
+
+    async function sed() {
+      const response = await fetch('/api/sedentary', {method: 'POST'});
+      if (response.ok) alert('Sedentary alert sent — STAND UP!');
+    }
   </script>
 </body>
 </html>

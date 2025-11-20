@@ -9,7 +9,7 @@ export default async function handler(req, res) {
     });
   } catch (e) {
     res.json({
-      quote: "Believe it!",
+      quote: "Believe in yourself!",
       character: "Naruto Uzumaki",
       anime: "Naruto"
     });
