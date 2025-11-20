@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NexOS • Dhaka</title>
+  <style>
+    :root { --bg: #0a0a0a; --text: #fff; --accent: #00d0ff; --btn: #00b8e6; }
+    body { margin:0; padding:20px; background:var(--bg); color:var(--text); font-family:system-ui; text-align:center; }
+    h1 { color:var(--accent); font-size:2.5em; margin:0; }
+    h2 { color:#aaa; margin-top:20px; }
+    button { background:var(--btn); color:#000; border:none; padding:16px; margin:8px; border-radius:12px; font-size:17px; width:88%; font-weight:bold; }
+    button:hover { background:#00e6ff; transform:scale(1.03); }
+    .dev { background:#111; border:2px solid var(--accent); border-radius:12px; padding:15px; margin-top:30px; }
+    .dev button { background:#333; color:#fff; font-size:15px; }
+    #status { margin-top:20px; padding:10px; background:#111; border-radius:8px; color:var(--accent); }
+  </style>
+</head>
+<body>
+  <h1>NexOS</h1>
+  <p>Dhaka • Cloud Companion</p>
+
+  <input type="time" id="time" style="padding:12px; width:80%; margin:15px; border-radius:8px; border:1px solid var(--accent); background:#222; color:white;">
+  <button onclick="setAlarm()">SET ALARM</button>
+
+  <button onclick="getWeather()">WEATHER • DHAKA</button>
+  <button onclick="getQuote()">ANIME QUOTE</button>
+  <button onclick="getNASA()">NASA ALERT</button>
+
+  <div class="dev">
+    <h2>Development Menu</h2>
+    <button onclick="ota()">OTA UPDATE</button>
+    <button onclick="emo()">EMO MODE</button>
+    <button onclick="sed()">SEDENTARY ALERT</button>
+  </div>
+
+  <div id="status">Ready</div>
+
+  <script>
+    async function setAlarm() {
+      const t = document.getElementById('time').value;
+      if (!t) return alert("Choose time!");
+      const [h,m] = t.split(':');
+      await fetch('/api/alarm', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({hour:+h, minute:+m, active:true})});
+      alert("Alarm set: " + t);
+    }
+    async function getWeather() { const d=await(await fetch('/api/weather')).json(); alert(`${d.location}\nTemp: ${d.temp}°C (${d.condition})\n${d.alerts.join('\n') || 'No alerts'}`); }
+    async function getQuote() { const d=await(await fetch('/api/quote')).json(); alert(`"${d.quote}"\n— ${d.character}\n(${d.anime})`); }
+    async function getNASA() { const d=await(await fetch('/api/nasa')).json(); alert(d.message); }
+    async function ota() { await fetch('/api/ota',{method:'POST'}); alert("OTA pushed!"); }
+    async function emo() { await fetch('/api/emo',{method:'POST'}); alert("Emo Mode ON!"); }
+    async function sed() { await fetch('/api/sedentary',{method:'POST'}); alert("Sedentary alert sent!"); }
+  </script>
+</body>
+</html>
