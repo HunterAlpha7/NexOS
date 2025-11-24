@@ -3,16 +3,17 @@ import path from 'path'
 const file = path.join(process.cwd(), 'data/state.json')
 
 export default function handler(req, res) {
-  const state = JSON.parse(fs.readFileSync(file))
-  if (req.method === 'POST') {
+  if (req.method === 'GET') {
+    res.json(JSON.parse(fs.readFileSync(file)))
+  } else if (req.method === 'POST') {
     const token = process.env.ADMIN_TOKEN
     if (token && req.headers.authorization !== 'Bearer ' + token) { res.status(401).json({ error: 'unauthorized' }); return }
+    const state = JSON.parse(fs.readFileSync(file))
     const body = req.body || {}
-    state.otaPending = true
-    if (body.url) state.otaUrl = body.url
+    Object.assign(state, body)
     fs.writeFileSync(file, JSON.stringify(state, null, 2))
     res.json({ success: true })
   } else {
-    res.json({ pending: state.otaPending, url: state.otaUrl || null })
+    res.status(405).end()
   }
 }

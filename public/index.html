@@ -52,6 +52,7 @@
     </div>
 
     <div id="status">Status: Ready</div>
+    <div id="telemetry">Device: offline • T: — °C • H: — % • Up: — s</div>
   </div>
 
   <script>
@@ -76,19 +77,37 @@
     async function getQuote() {
       const response = await fetch('/api/quote');
       const quote = await response.json();
-      alert(`"${quote.quote}"\n— ${quote.character}\n(${quote.anime})`);
+      const w = await fetch('/api/weather').then(r => r.json());
+      const alerts = w.alerts && w.alerts.length ? '\n\nWeather Alert:\n' + w.alerts.join('\n') : '';
+      alert(`"${quote.quote}"\n— ${quote.character}\n(${quote.anime})${alerts}`);
     }
 
     async function getNASA() {
       const response = await fetch('/api/nasa');
       const data = await response.json();
-      alert(data.message + '\nVelocity: ' + data.velocity + ' km/h');
+      alert(data.message);
     }
 
     async function ota() {
-      const response = await fetch('/api/ota', {method: 'POST'});
-      if (response.ok) alert('OTA update triggered — check NexOS!');
+      const url = prompt('Enter OTA firmware URL');
+      const response = await fetch('/api/ota', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ url })});
+      if (response.ok) alert('OTA update triggered');
     }
+
+    async function refreshStatus() {
+      try {
+        const s = await fetch('/api/status').then(r => r.json());
+        const tel = s.telemetry || {};
+        const online = s.deviceOnline ? 'online' : 'offline';
+        document.getElementById('status').textContent = 'Status: ' + (s.serviceOnline ? 'Service OK' : 'Service Down');
+        const up = tel.uptime ? (tel.uptime + ' s') : '— s';
+        const t = typeof tel.temp === 'number' ? tel.temp.toFixed(1) : '—';
+        const h = typeof tel.hum === 'number' ? tel.hum.toFixed(0) : '—';
+        document.getElementById('telemetry').textContent = `Device: ${online} • T: ${t} °C • H: ${h} % • Up: ${up}`;
+      } catch (e) {}
+    }
+    setInterval(refreshStatus, 3000);
+    refreshStatus();
 
     async function emo() {
       const response = await fetch('/api/emo', {method: 'POST'});
