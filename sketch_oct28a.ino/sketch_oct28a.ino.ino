@@ -6,6 +6,7 @@
 #include <DHT.h>
 #include <ArduinoOTA.h>
 #include <Update.h>
+#include <esp_task_wdt.h>
 
 // ────────────────────── PINS ──────────────────────
 #define SDA_PIN       0
@@ -21,10 +22,16 @@
 const char* ssid       = WIFI_SSID;
 const char* password   = WIFI_PASSWORD;
 const char* backend    = BACKEND_URL;
+#ifdef DEVICE_TOKEN
+const char* deviceToken = DEVICE_TOKEN;
+#else
+const char* deviceToken = "";
+#endif
 #else
 const char* ssid       = "LAN4";
 const char* password   = "21148860";
 const char* backend    = "https://nex-os.vercel.app";
+const char* deviceToken = "";
 #endif
 
 // ────────────────────── OBJECTS ──────────────────────
@@ -36,11 +43,14 @@ unsigned long lastPoll = 0;
 unsigned long lastTel = 0;
 float localTemp = 0, localHum = 0;
 String weatherAlert = "";
+String weatherCondition = "";
 String quote = "", character = "", anime = "";
 int alarmHour = -1, alarmMinute = -1;
 bool emoActive = false;
 bool sedentaryAlert = false;
 bool otaPending = true;
+unsigned long weatherPromptUntil = 0;
+unsigned long lastWeatherPromptAt = 0;
 
 volatile bool buttonPressed = false;
 void IRAM_ATTR buttonISR() { buttonPressed = true; }
@@ -81,6 +91,7 @@ void setup() {
   while (WiFi.status() != WL_CONNECTED && tries++ < 40) {
     digitalWrite(LED_PIN, !digitalRead(LED_PIN));
     Serial.print(".");
+    esp_task_wdt_reset();
     delay(500);
   }
 
@@ -141,6 +152,7 @@ void loop() {
 
 // ────────────────────── BACKEND POLLING ──────────────────────
 void fetchAllData() {
+  esp_task_wdt_reset();
   if (WiFi.status() != WL_CONNECTED) return;
   HTTPClient http;
   http.setTimeout(10000);
@@ -164,6 +176,8 @@ void fetchAllData() {
     otaPending = doc["otaPending"] | false;
     const char* u = doc["otaUrl"] | "";
     if (otaPending && String(u).length() > 0) performOTA(String(u).c_str());
+    unsigned long wp = doc["weatherPromptAt"] | 0;
+    if (wp > 0 && wp != lastWeatherPromptAt) { lastWeatherPromptAt = wp; weatherPromptUntil = millis() + 5000; }
   }
 
   // 3. Weather (Dhaka)
@@ -173,6 +187,7 @@ void fetchAllData() {
     deserializeJson(doc, http.getString());
     localTemp = doc["temp"].as<float>();
     localHum = doc["hum"].as<float>();
+    weatherCondition = doc["condition"].as<String>();
     JsonArray alerts = doc["alerts"];
     weatherAlert = alerts.size() > 0 ? alerts[0].as<String>() : "";
   }
@@ -181,6 +196,7 @@ void fetchAllData() {
   fetchQuote();
 
   http.end();
+  esp_task_wdt_reset();
 }
 
 void fetchQuote() {
@@ -267,6 +283,9 @@ void drawScreen() {
   if (weatherAlert != "") {
     u8g2.drawStr(2, 36, "ALERT:");
     u8g2.drawStr(2, 48, weatherAlert.substring(0, 20).c_str());
+  } else if (weatherPromptUntil > millis()) {
+    u8g2.drawStr(2, 36, (String("Weather: ") + weatherCondition).substring(0, 20).c_str());
+    u8g2.drawStr(2, 48, (String("T:") + String(localTemp, 1) + " H:" + String(localHum, 0) + "%").substring(0, 20).c_str());
   } else if (quote != "") {
     u8g2.drawStr(2, 36, quote.substring(0, 20).c_str());
     u8g2.drawStr(2, 48, ("—" + character).substring(0, 20).c_str());
@@ -291,11 +310,16 @@ void postTelemetry() {
   HTTPClient http;
   http.begin(String(backend) + "/api/telemetry");
   http.addHeader("Content-Type", "application/json");
+  if (deviceToken && deviceToken[0] != '\0') {
+    String auth = String("Bearer ") + deviceToken;
+    http.addHeader("Authorization", auth.c_str());
+  }
   http.POST(out);
   http.end();
 }
 
 bool performOTA(const char* url) {
+  esp_task_wdt_reset();
   HTTPClient http;
   http.begin(url);
   int code = http.GET();
@@ -306,6 +330,7 @@ bool performOTA(const char* url) {
   size_t written = Update.writeStream(*stream);
   bool ok = written == len && Update.end();
   http.end();
+  esp_task_wdt_reset();
   if (ok && Update.isFinished()) { ESP.restart(); return true; }
   return false;
 }

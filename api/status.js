@@ -6,7 +6,7 @@ export default function handler(req, res) {
   let telemetry = null
   try { telemetry = JSON.parse(fs.readFileSync(telFile)) } catch (e) {}
   const last = telemetry && telemetry.lastSeen ? new Date(telemetry.lastSeen) : null
-  const online = last ? (Date.now() - last.getTime() < 500) : false
+  const online = last ? (Date.now() - last.getTime() < 30000) : false
   res.json({
     serviceOnline: true,
     deviceOnline: online,

@@ -72,6 +72,10 @@
       const response = await fetch('/api/weather');
       const data = await response.json();
       alert(data.location + '\nTemp: ' + data.temp + '°C (' + data.condition + ')\nAlerts:\n' + (data.alerts.length ? data.alerts.join('\n') : 'None'));
+      try {
+        const headers = authHeaders();
+        await fetch('/api/state', { method: 'POST', headers, body: JSON.stringify({ weatherPromptAt: Date.now() }) });
+      } catch (e) {}
     }
 
     async function getQuote() {
@@ -90,7 +94,7 @@
 
     async function ota() {
       const url = prompt('Enter OTA firmware URL');
-      const response = await fetch('/api/ota', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ url })});
+      const response = await fetch('/api/ota', {method: 'POST', headers: authHeaders(), body: JSON.stringify({ url })});
       if (response.ok) alert('OTA update triggered');
     }
 
@@ -117,6 +121,17 @@
     async function sed() {
       const response = await fetch('/api/sedentary', {method: 'POST'});
       if (response.ok) alert('Sedentary alert sent — STAND UP!');
+    }
+
+    function authHeaders() {
+      const headers = { 'Content-Type': 'application/json' };
+      let token = localStorage.getItem('adminToken') || '';
+      if (!token) {
+        const t = prompt('Enter admin token');
+        if (t) { token = t; localStorage.setItem('adminToken', t); }
+      }
+      if (token) headers['Authorization'] = 'Bearer ' + token;
+      return headers;
     }
   </script>
 </body>
