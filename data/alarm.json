@@ -1,1 +1,5 @@
-{ "hour": -1, "minute": -1, "active": false }
+{
+  "hour": -1,
+  "minute": -1,
+  "active": false
+}

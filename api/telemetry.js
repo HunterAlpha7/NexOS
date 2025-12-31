@@ -1,23 +1,31 @@
-import fs from 'fs'
-import path from 'path'
-const file = path.join(process.cwd(), 'data/telemetry.json')
+import fs from 'fs';
+import path from 'path';
 
-function ensureFile() {
-  if (!fs.existsSync(file)) fs.writeFileSync(file, JSON.stringify({ temp: 0, hum: 0, uptime: 0, lastSeen: null }, null, 2))
+const file = path.join(process.cwd(), 'data', 'telemetry.json');
+
+function getTelemetry() {
+  try {
+    return JSON.parse(fs.readFileSync(file, 'utf8'));
+  } catch (e) {
+    return { temp: 0, hum: 0, uptime: 0, lastSeen: null };
+  }
+}
+
+function saveTelemetry(data) {
+  fs.writeFileSync(file, JSON.stringify(data, null, 2));
 }
 
 export default function handler(req, res) {
-  ensureFile()
-  if (req.method === 'GET') {
-    res.json(JSON.parse(fs.readFileSync(file)))
-  } else if (req.method === 'POST') {
-    const token = process.env.DEVICE_TOKEN
-    if (token && req.headers.authorization !== 'Bearer ' + token) { res.status(401).json({ error: 'unauthorized' }); return }
-    const body = req.body || {}
-    const data = { temp: body.temp || 0, hum: body.hum || 0, uptime: body.uptime || 0, lastSeen: new Date().toISOString() }
-    fs.writeFileSync(file, JSON.stringify(data, null, 2))
-    res.json({ success: true })
-  } else {
-    res.status(405).end()
+  const token = process.env.DEVICE_TOKEN;
+  if (req.method === 'POST') {
+    if (token && req.headers.authorization !== `Bearer ${token}`) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    const telemetry = getTelemetry();
+    const newTelemetry = { ...telemetry, ...req.body, lastSeen: new Date().toISOString() };
+    saveTelemetry(newTelemetry);
+    return res.status(200).json({ success: true });
   }
+
+  res.status(200).json(getTelemetry());
 }

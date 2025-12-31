@@ -1,1 +1,6 @@
-{ "emoActive": false, "sedentaryAlert": false, "otaPending": false, "otaUrl": "" }
+{
+  "otaUrl": null,
+  "otaPending": false,
+  "sedentaryAlert": false,
+  "fetchQuote": false
+}

@@ -1,16 +1,18 @@
-import fs from 'fs'
-import path from 'path'
-const telFile = path.join(process.cwd(), 'data/telemetry.json')
+import fs from 'fs';
+import path from 'path';
+
+const telemetryFile = path.join(process.cwd(), 'data', 'telemetry.json');
 
 export default function handler(req, res) {
-  let telemetry = null
-  try { telemetry = JSON.parse(fs.readFileSync(telFile)) } catch (e) {}
-  const last = telemetry && telemetry.lastSeen ? new Date(telemetry.lastSeen) : null
-  const online = last ? (Date.now() - last.getTime() < 30000) : false
-  res.json({
-    serviceOnline: true,
-    deviceOnline: online,
-    features: { emo: true, weather: true, quote: true, nasa: true, alarm: true, sedentary: true, ota: true },
-    telemetry
-  })
+  let telemetry = {};
+  try {
+    telemetry = JSON.parse(fs.readFileSync(telemetryFile, 'utf8'));
+  } catch (e) {}
+
+  const isOnline = telemetry.lastSeen && (new Date() - new Date(telemetry.lastSeen) < 30000);
+
+  res.status(200).json({
+    deviceOnline: isOnline,
+    telemetry: telemetry,
+  });
 }

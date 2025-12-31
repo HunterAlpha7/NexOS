@@ -3,136 +3,119 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NexOS Control • Dhaka</title>
+  <title>NexOS Control</title>
   <style>
-    :root {
-      --bg: #000;
-      --text: #fff;
-      --accent: #00d0ff;  /* Turquoise blue */
-      --btn: #00b8e6;
-      --btn-hover: #0099cc;
-      --dev-bg: #111;
-      --dev-border: #00d0ff;
-    }
-    * { box-sizing: border-box; }
-    body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; text-align: center; line-height: 1.4; }
-    h1 { color: var(--accent); font-size: 2.2em; margin: 0 0 10px; text-shadow: 0 0 10px var(--accent); }
-    p { color: #aaa; font-size: 1em; margin: 0 0 20px; }
-    .container { max-width: 380px; margin: auto; }
-    input { background: #222; color: var(--text); border: 1px solid var(--accent); padding: 14px; margin: 10px; border-radius: 8px; width: 85%; font-size: 16px; text-align: center; }
-    button { background: var(--btn); color: #000; border: none; padding: 16px 24px; margin: 8px; border-radius: 12px; font-size: 16px; cursor: pointer; transition: all 0.3s; width: 85%; font-weight: bold; box-shadow: 0 4px 8px rgba(0,176,230,0.3); }
-    button:hover { background: var(--btn-hover); transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,176,230,0.4); }
-    .dev-menu { background: var(--dev-bg); border: 1px solid var(--dev-border); border-radius: 12px; padding: 20px; margin: 25px 0; }
-    .dev-menu h2 { color: var(--accent); border-bottom: 1px solid var(--dev-border); padding-bottom: 10px; }
-    .dev-menu button { background: #444; color: #fff; font-size: 14px; box-shadow: none; }
-    .dev-menu button:hover { background: #555; transform: none; }
-    #status { background: #111; padding: 12px; border-radius: 8px; margin: 20px 0; color: var(--accent); font-size: 14px; border: 1px solid var(--accent); }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f0f2f5; color: #1c1e21; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+    .container { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); max-width: 400px; width: 100%; text-align: center; }
+    h1 { font-size: 24px; margin-bottom: 20px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+    button { background-color: #1877f2; color: white; border: none; padding: 12px; border-radius: 6px; font-size: 16px; cursor: pointer; width: 100%; transition: background-color 0.3s; }
+    button:hover { background-color: #166fe5; }
+    #status-container { margin-top: 20px; padding: 10px; background: #f6f7f9; border-radius: 6px; }
+    #status { font-weight: bold; }
+    #telemetry { margin-top: 5px; color: #606770; }
+    input[type="time"] { width: calc(100% - 24px); padding: 12px; border: 1px solid #dddfe2; border-radius: 6px; margin-bottom: 10px; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>NexOS</h1>
-    <p>Dhaka Desk Companion • v1.0</p>
-
-    <!-- Main Menu -->
-    <h2>Main Features</h2>
-    <input type="time" id="alarmTime" placeholder="Set alarm time">
-    <button onclick="setAlarm()">SET ALARM</button>
-
-    <button onclick="getWeather()">WEATHER ALERT</button>
-    <button onclick="getQuote()">ANIME QUOTE</button>
-    <button onclick="getNASA()">NASA SATELLITE</button>
-
-    <!-- Development Menu -->
-    <div class="dev-menu">
-      <h2>Development Menu</h2>
-      <button onclick="ota()">OTA UPDATE</button>
-      <button onclick="emo()">EMO MODE</button>
-      <button onclick="sed()">SEDENTARY ALERT</button>
+    <h1>NexOS Control</h1>
+    <div class="grid">
+      <button onclick="triggerAnimeQuote()">Anime Quote</button>
+      <button onclick="triggerSedentaryAlert()">Sedentary Alert</button>
+      <button onclick="triggerOtaUpdate()">OTA Update</button>
     </div>
-
-    <div id="status">Status: Ready</div>
-    <div id="telemetry">Device: offline • T: — °C • H: — % • Up: — s</div>
+    <div>
+      <input type="time" id="alarmTime">
+      <button onclick="setAlarm()">Set Alarm</button>
+    </div>
+    <div id="status-container">
+      <div id="status">Device Status: Unknown</div>
+      <div id="telemetry">Temp: --°C | Hum: --% | Uptime: --s</div>
+    </div>
   </div>
 
   <script>
-    async function setAlarm() {
-      const time = document.getElementById('alarmTime').value;
-      if (!time) return alert('Pick a time!');
-      const [h, m] = time.split(':');
-      const response = await fetch('/api/alarm', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({hour: parseInt(h), minute: parseInt(m), active: true})
-      });
-      if (response.ok) alert('Alarm set for ' + time + '!');
-    }
+    const API_BASE = '/api';
 
-    async function getWeather() {
-      const response = await fetch('/api/weather');
-      const data = await response.json();
-      alert(data.location + '\nTemp: ' + data.temp + '°C (' + data.condition + ')\nAlerts:\n' + (data.alerts.length ? data.alerts.join('\n') : 'None'));
-      try {
-        const headers = authHeaders();
-        await fetch('/api/state', { method: 'POST', headers, body: JSON.stringify({ weatherPromptAt: Date.now() }) });
-      } catch (e) {}
-    }
-
-    async function getQuote() {
-      const response = await fetch('/api/quote');
-      const quote = await response.json();
-      const w = await fetch('/api/weather').then(r => r.json());
-      const alerts = w.alerts && w.alerts.length ? '\n\nWeather Alert:\n' + w.alerts.join('\n') : '';
-      alert(`"${quote.quote}"\n— ${quote.character}\n(${quote.anime})${alerts}`);
-    }
-
-    async function getNASA() {
-      const response = await fetch('/api/nasa');
-      const data = await response.json();
-      alert(data.message);
-    }
-
-    async function ota() {
-      const url = prompt('Enter OTA firmware URL');
-      const response = await fetch('/api/ota', {method: 'POST', headers: authHeaders(), body: JSON.stringify({ url })});
-      if (response.ok) alert('OTA update triggered');
-    }
-
-    async function refreshStatus() {
-      try {
-        const s = await fetch('/api/status').then(r => r.json());
-        const tel = s.telemetry || {};
-        const online = s.deviceOnline ? 'online' : 'offline';
-        document.getElementById('status').textContent = 'Status: ' + (s.serviceOnline ? 'Service OK' : 'Service Down');
-        const up = tel.uptime ? (tel.uptime + ' s') : '— s';
-        const t = typeof tel.temp === 'number' ? tel.temp.toFixed(1) : '—';
-        const h = typeof tel.hum === 'number' ? tel.hum.toFixed(0) : '—';
-        document.getElementById('telemetry').textContent = `Device: ${online} • T: ${t} °C • H: ${h} % • Up: ${up}`;
-      } catch (e) {}
-    }
-    setInterval(refreshStatus, 3000);
-    refreshStatus();
-
-    async function emo() {
-      const response = await fetch('/api/emo', {method: 'POST'});
-      if (response.ok) alert('Emo Mode activated — funny faces coming!');
-    }
-
-    async function sed() {
-      const response = await fetch('/api/sedentary', {method: 'POST'});
-      if (response.ok) alert('Sedentary alert sent — STAND UP!');
-    }
-
-    function authHeaders() {
-      const headers = { 'Content-Type': 'application/json' };
-      let token = localStorage.getItem('adminToken') || '';
+    function getAdminToken() {
+      let token = localStorage.getItem('adminToken');
       if (!token) {
-        const t = prompt('Enter admin token');
-        if (t) { token = t; localStorage.setItem('adminToken', t); }
+        token = prompt('Please enter the admin token:');
+        if (token) {
+          localStorage.setItem('adminToken', token);
+        }
       }
-      if (token) headers['Authorization'] = 'Bearer ' + token;
-      return headers;
+      return token;
     }
+
+    async function setAlarm() {
+      const token = getAdminToken();
+      if (!token) return;
+      const time = document.getElementById('alarmTime').value;
+      if (!time) return alert('Please select a time for the alarm.');
+      const [hour, minute] = time.split(':');
+      await fetch(`${API_BASE}/alarm`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ hour: parseInt(hour), minute: parseInt(minute), active: true })
+      });
+      alert('Alarm has been set.');
+    }
+
+    async function triggerAnimeQuote() {
+      const token = getAdminToken();
+      if (!token) return;
+      await fetch(`${API_BASE}/quote`, { 
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      alert('Anime quote requested.');
+    }
+
+    async function triggerSedentaryAlert() {
+      const token = getAdminToken();
+      if (!token) return;
+      await fetch(`${API_BASE}/sedentary`, { 
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      alert('Sedentary alert sent.');
+    }
+
+    async function triggerOtaUpdate() {
+      const token = getAdminToken();
+      if (!token) return;
+      const url = prompt('Enter the firmware URL for OTA update:');
+      if (!url) return;
+      await fetch(`${API_BASE}/ota`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ url })
+      });
+      alert('OTA update initiated.');
+    }
+
+    async function fetchStatus() {
+      const res = await fetch(`${API_BASE}/status`);
+      const data = await res.json();
+      const statusDiv = document.getElementById('status');
+      const telemetryDiv = document.getElementById('telemetry');
+
+      if (data.deviceOnline) {
+        statusDiv.textContent = 'Device Status: Online';
+        statusDiv.style.color = 'green';
+        const { temp, hum, uptime } = data.telemetry;
+        telemetryDiv.textContent = `Temp: ${temp}°C | Hum: ${hum}% | Uptime: ${uptime}s`;
+      } else {
+        statusDiv.textContent = 'Device Status: Offline';
+        statusDiv.style.color = 'red';
+        telemetryDiv.textContent = 'Temp: --°C | Hum: --% | Uptime: --s';
+      }
+    }
+
+    setInterval(fetchStatus, 5000);
+    fetchStatus();
   </script>
 </body>
 </html>
