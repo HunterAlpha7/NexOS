@@ -3,188 +3,361 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mochi Bot Control</title>
+    <title>MOCHI // COMMAND CENTER</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #eef2f5; text-align: center; padding: 20px; color: #333; }
-        .container { max-width: 400px; margin: 0 auto; background: white; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); overflow: hidden; }
-        .header { background: #6c5ce7; color: white; padding: 25px 20px; }
-        .header h1 { margin: 0; font-size: 24px; letter-spacing: 1px; }
-        
-        /* Status Badge */
-        .status-badge { display: inline-block; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-top: 10px; background: #dfe6e9; color: #636e72; transition: 0.3s; }
-        .status-online { background: #00b894; color: white; box-shadow: 0 0 10px #00b894; }
-        .status-offline { background: #d63031; color: white; }
+        :root {
+            --bg-color: #0b0c10;
+            --panel-color: #1f2833;
+            --accent-cyan: #66fcf1;
+            --accent-dim: #45a29e;
+            --text-color: #c5c6c7;
+            --alert-color: #ff003c;
+            --success-color: #00ff9d;
+        }
 
-        .content { padding: 25px; }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Share Tech Mono', monospace;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            background-image: 
+                linear-gradient(rgba(11, 12, 16, 0.95), rgba(11, 12, 16, 0.95)),
+                linear-gradient(0deg, transparent 24%, rgba(102, 252, 241, .05) 25%, rgba(102, 252, 241, .05) 26%, transparent 27%, transparent 74%, rgba(102, 252, 241, .05) 75%, rgba(102, 252, 241, .05) 76%, transparent 77%, transparent),
+                linear-gradient(90deg, transparent 24%, rgba(102, 252, 241, .05) 25%, rgba(102, 252, 241, .05) 26%, transparent 27%, transparent 74%, rgba(102, 252, 241, .05) 75%, rgba(102, 252, 241, .05) 76%, transparent 77%, transparent);
+            background-size: 50px 50px;
+        }
+
+        .dashboard {
+            width: 100%;
+            max-width: 480px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* HEADER */
+        .header {
+            border: 1px solid var(--accent-cyan);
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 0 15px rgba(102, 252, 241, 0.2);
+            position: relative;
+            background: rgba(31, 40, 51, 0.8);
+        }
+        .header h1 { margin: 0; font-size: 28px; color: var(--accent-cyan); letter-spacing: 2px; text-shadow: 0 0 5px var(--accent-cyan); }
+        .status-badge {
+            font-size: 14px; margin-top: 5px; color: var(--text-color);
+        }
+        .blink { animation: blinker 1.5s linear infinite; color: var(--success-color); }
+        @keyframes blinker { 50% { opacity: 0; } }
+
+        /* TELEMETRY CARDS */
+        .telemetry-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .card {
+            background: rgba(31, 40, 51, 0.6);
+            border: 1px solid var(--accent-dim);
+            padding: 15px;
+            text-align: center;
+        }
+        .card h3 { margin: 0 0 5px 0; font-size: 14px; color: var(--accent-cyan); opacity: 0.8; }
+        .data-value { font-size: 24px; color: white; font-weight: bold; }
+
+        /* CONTROLS */
+        .control-panel {
+            border: 1px solid var(--text-color);
+            padding: 15px;
+            background: rgba(31, 40, 51, 0.6);
+        }
+        .section-title {
+            border-bottom: 1px solid var(--accent-dim);
+            margin-bottom: 15px;
+            padding-bottom: 5px;
+            color: var(--accent-cyan);
+            font-size: 14px;
+        }
+
+        /* BUTTONS */
+        button {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            background: transparent;
+            border: 1px solid var(--accent-cyan);
+            color: var(--accent-cyan);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.2s;
+            text-transform: uppercase;
+        }
+        button:hover { background: rgba(102, 252, 241, 0.1); box-shadow: 0 0 10px var(--accent-cyan); }
+        button:active { background: var(--accent-cyan); color: black; }
         
-        /* Buttons */
-        .btn { display: block; width: 100%; padding: 16px; margin: 12px 0; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; transition: transform 0.1s, opacity 0.2s; color: white; }
-        .btn:active { transform: scale(0.98); }
-        .btn-sedentary { background: #00b894; }
-        .btn-alarm { background: #ff7675; }
-        .btn-quote { background: #0984e3; }
-        .btn-msg { background: #fdcb6e; color: #2d3436; }
+        .btn-danger { border-color: var(--alert-color); color: var(--alert-color); }
+        .btn-danger:hover { background: rgba(255, 0, 60, 0.1); box-shadow: 0 0 10px var(--alert-color); }
+
+        /* INPUTS */
+        input[type="text"] {
+            width: 100%; padding: 10px; background: black; border: 1px solid var(--accent-dim);
+            color: white; font-family: 'Share Tech Mono'; margin-bottom: 10px; box-sizing: border-box; text-align: center;
+        }
+        input:focus { outline: none; border-color: var(--accent-cyan); }
+
+        /* POMODORO */
+        .pomodoro-box {
+            text-align: center;
+            border: 1px solid var(--accent-cyan);
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+        .timer-display { font-size: 42px; color: white; margin: 10px 0; text-shadow: 0 0 10px rgba(255,255,255,0.5); }
         
-        /* Inputs */
-        input[type="text"] { width: 100%; padding: 15px; margin-bottom: 5px; border: 2px solid #dfe6e9; border-radius: 10px; box-sizing: border-box; font-size: 16px; text-align: center; }
-        input:focus { border-color: #6c5ce7; outline: none; }
-        
-        .divider { border: 0; border-top: 1px solid #eee; margin: 25px 0; }
-        .footer { font-size: 12px; color: #b2bec3; margin-top: 20px; }
+        /* CONSOLE LOG */
+        .console {
+            background: black;
+            border: 1px solid #333;
+            height: 120px;
+            overflow-y: auto;
+            padding: 10px;
+            font-size: 12px;
+            text-align: left;
+            opacity: 0.8;
+        }
+        .log-line { margin: 2px 0; }
+        .log-time { color: var(--accent-dim); margin-right: 5px; }
+        .log-info { color: var(--text-color); }
+        .log-success { color: var(--success-color); }
+        .log-warn { color: var(--alert-color); }
+
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="header">
-        <h1>Mochi Bot 🤖</h1>
-        <div id="statusBadge" class="status-badge">CONNECTING...</div>
+    <div class="dashboard">
+        <!-- Header -->
+        <div class="header">
+            <h1>MOCHI // OS</h1>
+            <div id="connectionStatus" class="status-badge">SYSTEM OFFLINE</div>
+        </div>
+
+        <!-- Telemetry -->
+        <div class="telemetry-grid">
+            <div class="card">
+                <h3>TEMP</h3>
+                <div id="tempVal" class="data-value">--°C</div>
+            </div>
+            <div class="card">
+                <h3>HUMIDITY</h3>
+                <div id="humVal" class="data-value">--%</div>
+            </div>
+        </div>
+
+        <!-- Pomodoro Module -->
+        <div class="control-panel">
+            <div class="section-title">>> FOCUS MODULE (POMODORO)</div>
+            <div class="pomodoro-box">
+                <div id="pomoTimer" class="timer-display">25:00</div>
+                <div style="display:flex; gap:10px;">
+                    <button onclick="startPomodoro()">INITIATE</button>
+                    <button class="btn-danger" onclick="resetPomodoro()">ABORT</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="control-panel">
+            <div class="section-title">>> COMMAND OVERRIDE</div>
+            <button id="sedBtn" onclick="toggleSedentary()">SEDENTARY MODE: --</button>
+            <button class="btn-danger" onclick="triggerAlarm()">TRIGGER ALARM PROTOCOL</button>
+            <button onclick="fetchNewQuote()">TRANSMIT ANIME DATA</button>
+            
+            <div style="margin-top: 15px;">
+                <input type="text" id="msgInput" placeholder="ENTER MESSAGE PAYLOAD" maxlength="18">
+                <button onclick="sendMessage()">UPLOAD MESSAGE</button>
+            </div>
+        </div>
+
+        <!-- System Log -->
+        <div class="console" id="sysConsole">
+            <div class="log-line"><span class="log-time">[BOOT]</span> <span class="log-info">Interface initialized...</span></div>
+        </div>
     </div>
-
-    <div class="content">
-        <!-- Sedentary Toggle -->
-        <button id="sedBtn" class="btn btn-sedentary" onclick="toggleSedentary()">
-            Sedentary Mode: ...
-        </button>
-
-        <div class="divider"></div>
-
-        <!-- Alarm Trigger -->
-        <button class="btn btn-alarm" onclick="triggerAlarm()">🚨 RING ALARM NOW</button>
-
-        <!-- Dynamic Quote -->
-        <button class="btn btn-quote" onclick="fetchNewQuote()">✨ Send Anime Quote</button>
-
-        <div class="divider"></div>
-
-        <!-- Message -->
-        <input type="text" id="msgInput" placeholder="Type a message..." maxlength="18">
-        <button class="btn btn-msg" onclick="sendMessage()">📨 Send Message</button>
-        
-        <p class="footer" id="debugLog">System Ready</p>
-    </div>
-</div>
 
 <script>
     // ==========================================
-    // STEP 1: PASTE YOUR FIREBASE URL BELOW
-    // MUST END WITH A SLASH /
+    // PASTE YOUR FIREBASE URL HERE (End with /)
     // ==========================================
     const DATABASE_URL = "https://mochi-bot-nexo-default-rtdb.asia-southeast1.firebasedatabase.app/"; 
     // ==========================================
 
-    let currentSedentary = false;
-    let lastSeenTime = 0;
-    let localCheckTime = 0;
+    let currentState = {};
+    let lastLogMsg = "";
+    
+    // Pomodoro Vars
+    let pomoInterval = null;
+    let pomoTime = 25 * 60; // 25 mins in seconds
+    let isPomoRunning = false;
 
-    // --- SYNC WITH FIREBASE (Reads Status) ---
-    async function syncState() {
+    function log(msg, type="info") {
+        if(msg === lastLogMsg) return; // Debounce logs
+        lastLogMsg = msg;
+        
+        const consoleDiv = document.getElementById('sysConsole');
+        const now = new Date();
+        const timeStr = `[${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}]`;
+        
+        const line = document.createElement('div');
+        line.className = "log-line";
+        let colorClass = "log-info";
+        if(type === "success") colorClass = "log-success";
+        if(type === "warn") colorClass = "log-warn";
+        
+        line.innerHTML = `<span class="log-time">${timeStr}</span> <span class="${colorClass}">${msg}</span>`;
+        consoleDiv.appendChild(line);
+        consoleDiv.scrollTop = consoleDiv.scrollHeight;
+    }
+
+    async function syncSystem() {
         try {
             const response = await fetch(DATABASE_URL + "mochi_status.json");
             const data = await response.json();
             
             if(data) {
-                // 1. Update Buttons
-                currentSedentary = data.sedentary_mode;
-                const btn = document.getElementById('sedBtn');
-                btn.innerText = `Sedentary Mode: ${currentSedentary ? 'ON' : 'OFF'}`;
-                btn.style.opacity = currentSedentary ? '1' : '0.5';
-
-                // 2. Check "Last Seen" Heartbeat
-                // The ESP32 sends a timestamp (millis) every 30s.
-                // If this number changes, the bot is alive.
-                const serverTimestamp = data.last_seen; 
-                
-                if (serverTimestamp !== lastSeenTime) {
-                    // It changed! Bot is online.
-                    lastSeenTime = serverTimestamp;
-                    localCheckTime = Date.now();
-                    setStatus(true);
+                // Connection Status
+                const badge = document.getElementById('connectionStatus');
+                // Check if last_seen updated recently (within 45s)
+                const now = Date.now();
+                if(now - (data.last_seen || 0) < 45000) {
+                    badge.innerHTML = "SYSTEM ONLINE <span class='blink'>●</span>";
+                    badge.style.color = "var(--success-color)";
                 } else {
-                    // Hasn't changed. Is it stale?
-                    // If local time > 45s since last change, mark offline.
-                    if (Date.now() - localCheckTime > 45000) {
-                        setStatus(false);
-                    }
+                    badge.innerHTML = "SIGNAL LOST";
+                    badge.style.color = "var(--alert-color)";
                 }
+
+                // Sensors
+                document.getElementById('tempVal').innerText = (data.temperature || "--") + "°C";
+                document.getElementById('humVal').innerText = (data.humidity || "--") + "%";
+                
+                // Sedentary Button
+                const sedBtn = document.getElementById('sedBtn');
+                sedBtn.innerText = `SEDENTARY MODE: ${data.sedentary_mode ? 'ACTIVE' : 'STANDBY'}`;
+                if(data.sedentary_mode) sedBtn.style.background = "rgba(102, 252, 241, 0.2)";
+                else sedBtn.style.background = "transparent";
+
+                currentState = data;
             }
         } catch (e) {
-            console.log(e);
-            setStatus(false);
+            log("Connection error: " + e.message, "warn");
         }
     }
 
-    function setStatus(isOnline) {
-        const badge = document.getElementById('statusBadge');
-        const log = document.getElementById('debugLog');
-        if (isOnline) {
-            badge.className = "status-badge status-online";
-            badge.innerText = "ONLINE 🟢";
-            log.innerText = "Connected to Mochi";
-        } else {
-            badge.className = "status-badge status-offline";
-            badge.innerText = "OFFLINE 🔴";
-            log.innerText = "Mochi is unreachable";
-        }
-    }
-
-    // --- SEND COMMANDS TO FIREBASE ---
-    async function updateFirebase(payload) {
+    async function sendCommand(payload) {
+        log("Transmitting data packet...", "info");
         try {
             await fetch(DATABASE_URL + "mochi_status.json", {
                 method: 'PATCH',
                 body: JSON.stringify(payload)
             });
-            // Force an immediate sync to update UI
-            setTimeout(syncState, 200); 
+            log("Packet acknowledged.", "success");
+            setTimeout(syncSystem, 500);
         } catch (e) {
-            alert("Error sending command");
+            log("Transmission failed.", "warn");
         }
     }
 
-    function toggleSedentary() { updateFirebase({ sedentary_mode: !currentSedentary }); }
+    // --- BUTTON FUNCTIONS ---
+    function toggleSedentary() {
+        sendCommand({ sedentary_mode: !currentState.sedentary_mode });
+    }
 
     function triggerAlarm() {
-        updateFirebase({ trigger_alarm: true });
-        // Auto-reset the trigger after 3s so it can be rung again
-        setTimeout(() => updateFirebase({ trigger_alarm: false }), 3000);
+        sendCommand({ trigger_alarm: true });
+        log("Alarm protocol initiated.", "warn");
+        setTimeout(() => sendCommand({ trigger_alarm: false }), 3000);
     }
 
     function sendMessage() {
         const msg = document.getElementById('msgInput').value;
         if(!msg) return;
-        updateFirebase({ message: msg });
+        sendCommand({ message: msg });
         document.getElementById('msgInput').value = "";
-        // Clear message after 5s
-        setTimeout(() => updateFirebase({ message: "" }), 5000);
+        setTimeout(() => sendCommand({ message: "" }), 5000);
     }
 
     async function fetchNewQuote() {
-        document.getElementById('debugLog').innerText = "Fetching Quote...";
+        log("Querying Anime Database...", "info");
         try {
             const res = await fetch('https://animechan.xyz/api/random');
             const data = await res.json();
-            updateFirebase({
+            sendCommand({
                 trigger_quote: true,
                 quote_text: data.quote,
                 quote_char: data.character,
                 quote_anime: data.anime
             });
-            setTimeout(() => updateFirebase({ trigger_quote: false }), 5000);
+            setTimeout(() => sendCommand({ trigger_quote: false }), 5000);
         } catch(e) {
-            // Fallback if API is down
-            updateFirebase({
+            log("API Unreachable. Sending cached data.", "warn");
+            sendCommand({
                 trigger_quote: true,
-                quote_text: "I will become the God of this world!",
-                quote_char: "Light Yagami",
-                quote_anime: "Death Note"
+                quote_text: "System Failure.",
+                quote_char: "Admin",
+                quote_anime: "Mochi OS"
             });
         }
     }
 
-    // Poll every 3 seconds to check status
-    setInterval(syncState, 3000);
-    syncState(); // Run immediately on load
+    // --- POMODORO LOGIC ---
+    function updateTimerDisplay() {
+        const m = Math.floor(pomoTime / 60).toString().padStart(2, '0');
+        const s = (pomoTime % 60).toString().padStart(2, '0');
+        document.getElementById('pomoTimer').innerText = `${m}:${s}`;
+    }
+
+    function startPomodoro() {
+        if(isPomoRunning) return;
+        isPomoRunning = true;
+        log("Focus Session Initiated.", "success");
+        // Tell Mochi to look focused
+        sendCommand({ pomodoro_mode: true }); 
+        
+        pomoInterval = setInterval(() => {
+            pomoTime--;
+            updateTimerDisplay();
+            if(pomoTime <= 0) {
+                clearInterval(pomoInterval);
+                isPomoRunning = false;
+                triggerAlarm(); // Ring when done!
+                log("Session Complete. Take a break.", "success");
+                sendCommand({ pomodoro_mode: false });
+                pomoTime = 25 * 60;
+            }
+        }, 1000);
+    }
+
+    function resetPomodoro() {
+        clearInterval(pomoInterval);
+        isPomoRunning = false;
+        pomoTime = 25 * 60;
+        updateTimerDisplay();
+        log("Timer reset.", "warn");
+        sendCommand({ pomodoro_mode: false });
+    }
+
+    // Init
+    setInterval(syncSystem, 2000);
+    syncSystem();
+    log("System Link Established.", "success");
 
 </script>
 </body>
